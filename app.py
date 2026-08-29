@@ -119,3 +119,44 @@ def print_sources(source_nodes) -> None:
     for number, node in enumerate(source_nodes, start=1):
         preview = node.node.get_content().replace("\n", " ")
         print(f"  [{number}] score={node.score:.2f}  {preview[:180]}...")
+
+
+def chat() -> None:
+    """Run the interactive command-line chat."""
+    if not has_built_index():
+        print("No index found. Run `python app.py index` first.")
+        return
+
+    index = create_index()
+    print("Ask questions about the U.S. Constitution. Type 'exit' to quit.")
+    while True:
+        question = input("\nYou: ").strip()
+        if question.lower() in {"exit", "quit"}:
+            print("Goodbye!")
+            return
+        if not question:
+            continue
+
+        source_nodes = retrieve_context(index, question)
+        print(f"\nAssistant: {answer_question(question, source_nodes)}")
+        if source_nodes:
+            print_sources(source_nodes)
+
+
+def main() -> None:
+    load_dotenv()
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("command", choices=["index", "chat"], help="Build the database or start the CLI")
+    args = parser.parse_args()
+    if not os.getenv("OPENAI_API_KEY"):
+        raise RuntimeError("OPENAI_API_KEY is missing. Copy .env.example to .env and add your key.")
+    if args.command == "index":
+        build_index()
+    else:
+        chat()
+
+
+if __name__ == "__main__":
+    main()
